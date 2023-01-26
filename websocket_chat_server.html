@@ -110,7 +110,12 @@
             font-size: medium;
             align-self: flex-start;
         }
+        .time {
+            color: #666;
+            font-size: small;
+        }
     </style>
+
     <body>
         <div class="top">
             <h1>HASH's Chat Room</h1>
@@ -119,25 +124,41 @@
             <div class="text" id="left">
                 <div class="name">Server</div>
                 <div class="txt">Hola!</div>
+                <div class="time" id="time1"></div>
+                <script>
+                    document.getElementById("time1").innerHTML =
+                        new Date().getHours() +
+                        ":" +
+                        (new Date().getMinutes() < 10 ? "0" : "") +
+                        new Date().getMinutes();
+                </script>
             </div>
             <div class="text" id="left">
                 <div class="name">Server</div>
                 <div class="txt">Welcome to the private chat cloud.</div>
+                <div class="time" id="time2">
+                    <script>
+                        document.getElementById("time2").innerHTML =
+                            new Date().getHours() +
+                            ":" +
+                            (new Date().getMinutes() < 10 ? "0" : "") +
+                            new Date().getMinutes();
+                    </script>
+                </div>
             </div>
         </div>
         <div class="message">
-            <input id="nick" type="textarea" placeholder="Your name..." />
+            <!-- <input id="nick" type="textarea" placeholder="Your name..." /> -->
             <input id="in" type="textarea" placeholder="Write a message..." />
             <button id="send" onclick="sndMsg()">Send</button>
         </div>
     </body>
+
     <script>
-        var gateway = `ws://${window.location.hostname}/ws`;
-        var websocket;
-        var id;
-        var rec;
-        var ch;
+        let gateway = `ws://${window.location.hostname}/ws`;
         window.addEventListener("load", onLoad);
+        let websocket, rcv, name;
+
         function initWebSocket() {
             console.log("Trying to open a WebSocket connection...");
             websocket = new WebSocket(gateway);
@@ -145,47 +166,76 @@
             websocket.onclose = onClose;
             websocket.onmessage = onMessage; // <-- add this line
         }
+
         function onOpen(event) {
             console.log("Connection opened");
+            sndFirstReq();
         }
+
         function onClose(event) {
             console.log("Connection closed");
             setTimeout(initWebSocket, 2000);
         }
+
         function onMessage(event) {
             rcv = JSON.parse(event.data);
-            if (rcv.stat == "init") id = rcv.id;
-            else if (rcv.stat == "msg" && rcv.id != id) {
+            console.log(rcv);
+            let flags = Boolean(rcv.name && rcv.msg && rcv.time);
+
+            if (rcv.name != name && flags) {
                 document.getElementById("conv").innerHTML +=
                     "<div class='text' id='left'><div class='name'>" +
-                    rcv.id +
+                    rcv.name +
                     "</div><div class='txt'>" +
-                    rcv.message +
+                    rcv.msg +
+                    "</div><div class='time'>" +
+                    rcv.time +
                     "</div></div>";
             }
         }
+
+        async function sndFirstReq() {
+            name = prompt("Name Enter chey Bhayia:");
+            const info = {
+                name,
+            };
+            let a = await websocket.send(JSON.stringify(info));
+            console.log(a);
+        }
+
         function onLoad(event) {
-            // initWebSocket();
+            initWebSocket();
             initButton();
         }
+
         function initButton() {
             document
-                .getElementById("send")
-                .addEventListener("keypress", function (event) {
+                .getElementById("in")
+                .addEventListener("keypress", (event) => {
                     console.log(event);
-                    if (event.key == 13) {
+                    if (event.key == "Enter") {
                         document.getElementById("send").click();
                     }
                 });
         }
         function sndMsg() {
+            let time =
+                new Date().getHours() +
+                ":" +
+                (new Date().getMinutes() < 10 ? "0" : "") +
+                new Date().getMinutes();
             const info = {
-                nickname: document.getElementById("nick").value,
-                message: document.getElementById("in").value,
+                msg: document.getElementById("in").value,
+                time,
             };
+            console.log(info);
             document.getElementById("in").value = "";
             document.getElementById("conv").innerHTML +=
-                "<div class='text' id='right'>" + info.message + "</div>";
+                "<div class='text' id='right'>" +
+                info.msg +
+                "<div class='time'>" +
+                info.time +
+                "</div></div>";
             websocket.send(JSON.stringify(info));
         }
     </script>
