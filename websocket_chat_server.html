@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>OnlineChatServer</title>
+    </head>
+    <style>
+        body {
+            overflow: hidden;
+            height: 100vw;
+            display: flex;
+            flex-direction: column;
+            background-color: rgb(54, 54, 54);
+        }
+        .top {
+            height: 50px;
+            display: flex;
+            background: rgb(255, 108, 108);
+            color: aliceblue;
+            justify-content: center;
+        }
+        h1 {
+            margin: 0;
+            align-self: center;
+        }
+        #conv {
+            display: flex;
+            padding: 0 20px 0 20px;
+            margin: 20px 0 10px 0;
+            overflow-y: scroll;
+            height: 450px;
+            color: aliceblue;
+            align-self: left;
+            flex-direction: column;
+            font-family: Consolas, "Courier New", monospace;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #666;
+            border-radius: 30px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: white;
+            border-radius: 30px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(skyblue, yellowgreen);
+        }
+        .text {
+            display: block;
+            flex-direction: column;
+            width: auto;
+            max-width: 80%;
+            height: auto;
+            margin: 3px;
+        }
+        #left {
+            align-self: flex-start;
+            display: flex;
+            text-align: right;
+            background-color: rgb(69, 69, 69);
+        }
+        #right {
+            align-self: flex-end;
+            text-align: right;
+            padding: 10px;
+            background-color: rgb(41, 105, 255);
+        }
+        .message {
+            display: flex;
+            text-align: center;
+            height: 50px;
+            padding: 2.5px;
+            display: flex;
+            justify-content: center;
+        }
+        #nick {
+            width: 100px;
+            height: 45px;
+            margin: 0 10px 0 0;
+        }
+        #in {
+            width: 390px;
+            height: 45px;
+        }
+        #send {
+            font-size: medium;
+            font-weight: bold;
+            color: whitesmoke;
+            background-color: lightseagreen;
+            border-color: red;
+            width: 100px;
+            height: 50px;
+            border-radius: 18px;
+        }
+        #rcv {
+            font-size: xx-small;
+            color: red;
+        }
+        .name {
+            font-size: large;
+            align-self: flex-start;
+            color: rgb(65, 235, 107);
+            padding: 2px;
+            margin: 2px 4px;
+        }
+        .txt {
+            margin: 0px 9px 5px;
+            font-size: medium;
+            align-self: flex-start;
+        }
+    </style>
+    <body>
+        <div class="top">
+            <h1>HASH's Chat Room</h1>
+        </div>
+        <div id="conv">
+            <div class="text" id="left">
+                <div class="name">Server</div>
+                <div class="txt">Hola!</div>
+            </div>
+            <div class="text" id="left">
+                <div class="name">Server</div>
+                <div class="txt">Welcome to the private chat cloud.</div>
+            </div>
+        </div>
+        <div class="message">
+            <input id="nick" type="textarea" placeholder="Your name..." />
+            <input id="in" type="textarea" placeholder="Write a message..." />
+            <button id="send" onclick="sndMsg()">Send</button>
+        </div>
+    </body>
+    <script>
+        var gateway = `ws://${window.location.hostname}/ws`;
+        var websocket;
+        var id;
+        var rec;
+        var ch;
+        window.addEventListener("load", onLoad);
+        function initWebSocket() {
+            console.log("Trying to open a WebSocket connection...");
+            websocket = new WebSocket(gateway);
+            websocket.onopen = onOpen;
+            websocket.onclose = onClose;
+            websocket.onmessage = onMessage; // <-- add this line
+        }
+        function onOpen(event) {
+            console.log("Connection opened");
+        }
+        function onClose(event) {
+            console.log("Connection closed");
+            setTimeout(initWebSocket, 2000);
+        }
+        function onMessage(event) {
+            rcv = JSON.parse(event.data);
+            if (rcv.stat == "init") id = rcv.id;
+            else if (rcv.stat == "msg" && rcv.id != id) {
+                document.getElementById("conv").innerHTML +=
+                    "<div class='text' id='left'><div class='name'>" +
+                    rcv.id +
+                    "</div><div class='txt'>" +
+                    rcv.message +
+                    "</div></div>";
+            }
+        }
+        function onLoad(event) {
+            // initWebSocket();
+            initButton();
+        }
+        function initButton() {
+            document
+                .getElementById("send")
+                .addEventListener("keypress", function (event) {
+                    console.log(event);
+                    if (event.key == 13) {
+                        document.getElementById("send").click();
+                    }
+                });
+        }
+        function sndMsg() {
+            const info = {
+                nickname: document.getElementById("nick").value,
+                message: document.getElementById("in").value,
+            };
+            document.getElementById("in").value = "";
+            document.getElementById("conv").innerHTML +=
+                "<div class='text' id='right'>" + info.message + "</div>";
+            websocket.send(JSON.stringify(info));
+        }
+    </script>
+</html>
