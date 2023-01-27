@@ -71,10 +71,6 @@ void initWebSocket() {
   server.addHandler(&ws);
 }
 
-String processor(const String& var) {
-  return String();
-}
-
 void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
@@ -94,10 +90,13 @@ void setup() {
 
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    request->send(SPIFFS, "/index.html", String(), false, processor);
+    request->send(SPIFFS, "/index.html","text/html");
   });
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/style.css", "text/css");
+  });
+  server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(SPIFFS, "/script.js", "text/javascript");
   });
 
   // Start server
