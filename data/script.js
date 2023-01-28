@@ -7,7 +7,7 @@ function initWebSocket() {
     websocket = new WebSocket(gateway);
     websocket.onopen = onOpen;
     websocket.onclose = onClose;
-    websocket.onmessage = onMessage; // <-- add this line
+    websocket.onmessage = onMessage;
 }
 
 function onOpen(event) {
@@ -29,9 +29,7 @@ function onClose(event) {
 function onMessage(event) {
     rcv = JSON.parse(event.data);
     console.log(rcv);
-    let flags = Boolean(rcv.name && rcv.msg && rcv.time);
-
-    if (rcv.name != name && flags) {
+    if (rcv.name && rcv.name != name && rcv.msg && rcv.time) {
         if (rcv.time == "NA")
             rcv.time =
                 new Date().getHours() +
@@ -47,12 +45,31 @@ function onMessage(event) {
             rcv.time +
             "</div></div>";
     }
+    else if(rcv.name && rcv.name != name && !rcv.msg && rcv.time)
+    {
+        document.getElementById("conv").innerHTML +=
+        "<div class='join'>"+rcv.name+" joined the chat at "+rcv.time+"</div>";
+    }
+    else if(rcv.name && rcv.name != name && !rcv.msg)
+    {
+        let time=new Date().getHours() +
+        ":" +
+        (new Date().getMinutes() < 10 ? "0" : "") +
+        new Date().getMinutes();
+        document.getElementById("conv").innerHTML +=
+        "<div class='join leave'>"+rcv.name+" left the chat at "+time+"</div>";
+    }
 }
 
 function sndFirstReq() {
     name = prompt("Enter Your Name (Visible to others)");
+    let time=new Date().getHours() +
+    ":" +
+    (new Date().getMinutes() < 10 ? "0" : "") +
+    new Date().getMinutes();
     const info = {
         name,
+        time,
     };
     console.log(info);
     websocket.send(JSON.stringify(info));
@@ -71,22 +88,25 @@ function initButton() {
     });
 }
 function sndMsg() {
-    let time =
-        new Date().getHours() +
-        ":" +
-        (new Date().getMinutes() < 10 ? "0" : "") +
-        new Date().getMinutes();
     const info = {
         msg: document.getElementById("in").value,
-        time,
+        time:"",
     };
-    console.log(info);
-    document.getElementById("in").value = "";
-    document.getElementById("conv").innerHTML +=
-        "<div class='text' id='right'><div class='txt'>" +
-        info.msg +
-        "</div><div class='time'>" +
-        info.time +
-        "</div></div>";
-    websocket.send(JSON.stringify(info));
+    if(info.msg)
+    {
+        info.time =
+            new Date().getHours() +
+            ":" +
+            (new Date().getMinutes() < 10 ? "0" : "") +
+            new Date().getMinutes();
+        console.log(info);
+        document.getElementById("in").value = "";
+        document.getElementById("conv").innerHTML +=
+            "<div class='text' id='right'><div class='txt'>" +
+            info.msg +
+            "</div><div class='time'>" +
+            info.time +
+            "</div></div>";
+        websocket.send(JSON.stringify(info));
+    }
 }

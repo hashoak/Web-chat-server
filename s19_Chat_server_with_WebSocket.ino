@@ -6,7 +6,7 @@
 #include <FS.h>
 
 // Replace with your network credentials
-const char* ssid = "Good Server";
+const char* ssid = "Chat Server";
 const char* password = "idontknow";
 
 const int ledPin = BUILTIN_LED;
@@ -18,13 +18,14 @@ AsyncWebSocket ws("/ws");
 DynamicJsonDocument clnt(1024);
 DynamicJsonDocument srvr(1024);
 DynamicJsonDocument clntList(1024);
+String x,y;
 
-void notifyClients(uint32_t id, String message, String time) {
-  String x = "id" + String(id);
-  Serial.printf("%s: %s\n", String(clntList[x]), message);
+void notifyClients(uint32_t id, String time="", String message="") {
+  x = "id" + String(id);
+  Serial.printf("%s  %s: %s\n", time, String(clntList[x]), message);
   srvr["name"] = clntList[x];
-  srvr["msg"] = message;
   srvr["time"] = time;
+  srvr["msg"] = message;
   x = "";
   serializeJson(srvr, x);
   ws.textAll(x);
@@ -35,16 +36,15 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *da
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
     data[len] = 0;
     deserializeJson(clnt, (char*)data);
-    if (clnt["name"])
+    if(clnt["name"])
     {
-      String x = "id" + String(client->id());
-      String y = clnt["name"];
-      clntList[x] = y;
-      Serial.printf("%s -> %s\n", x, y);
+      x = "id" + String(client->id());
+      clntList[x]=String(clnt["name"]);
+      notifyClients(client->id(),clnt["time"]);
     }
     else if (clnt["msg"] && clnt["time"])
     {
-      notifyClients(client->id(), clnt["msg"], clnt["time"]);
+      notifyClients(client->id(), clnt["time"], clnt["msg"]);
     }
   }
 }
@@ -56,6 +56,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       break;
     case WS_EVT_DISCONNECT:
       Serial.printf("WebSocket client #%u disconnected\n", client->id());
+      notifyClients(client->id());
       break;
     case WS_EVT_DATA:
       handleWebSocketMessage(client, arg, data, len);
@@ -71,6 +72,10 @@ void initWebSocket() {
   server.addHandler(&ws);
 }
 
+IPAddress local_IP(1,2,3,4);
+IPAddress gateway(192,168,4,9);
+IPAddress subnet(255,255,255,0);
+
 void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
@@ -81,9 +86,11 @@ void setup() {
 
   // Initialize Wi-Fi
   Serial.println();
-  Serial.println("Setting soft-AP ... ");
-  Serial.println(WiFi.softAP(ssid, password) ? "Ready" : "Failed!");
-  Serial.print("AP IP address: ");
+  Serial.print("Configuring soft-AP ... ");
+  Serial.println(WiFi.softAPConfig(local_IP,gateway,subnet) ? "":"");
+  Serial.print("Setting soft-AP: ");
+  Serial.println(WiFi.softAP(ssid, password,1,false,8) ? "Ready" : "Failed!");
+  Serial.print("IP address of soft-AP: ");
   Serial.println(WiFi.softAPIP());
 
   initWebSocket();

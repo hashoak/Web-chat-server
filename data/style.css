@@ -47,7 +47,7 @@ h1 {
     background: linear-gradient(skyblue, yellowgreen);
 }
 .text {
-    display: block;
+    display: flex;
     flex-direction: column;
     width: auto;
     max-width: 80%;
@@ -55,7 +55,6 @@ h1 {
 }
 #left {
     align-self: flex-start;
-    display: flex;
     text-align: right;
     background-color: rgb(69, 69, 69);
 }
@@ -81,6 +80,18 @@ h1 {
     text-align: right;
     padding: 10px 0 0 0;
     background-color: rgb(41, 105, 255);
+}
+.join{
+    margin: 3px;
+    align-self:center;
+    font-size: small;
+    margin: 5px 0;
+    background-color: #666;
+    padding: 3px 6px;
+    border-radius: 5px;
+}
+.leave{
+    background-color: darkred;
 }
 .message {
     display: flex;
@@ -118,6 +129,11 @@ h1 {
     }
     .time{
         font-size: x-large;
+    }
+    .join{
+        margin: 10px 0;
+        padding: 5px 10px;
+        font-size: large;
     }
     .message {
         height: 5%;
