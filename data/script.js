@@ -2,19 +2,6 @@ let gateway = `ws://${window.location.hostname}/ws`;
 window.addEventListener("load", onLoad);
 let websocket, rcv, name;
 
-let base64String = "";
-
-function imageUploaded() {
-    var file = document.querySelector("input[type=file]")["files"][0];
-
-    var reader = new FileReader();
-    reader.onload = function () {
-        base64String = reader.result;
-        imageBase64Stringsep = base64String;
-    };
-    reader.readAsDataURL(file);
-}
-
 function initWebSocket() {
     console.log("Trying to open a WebSocket connection...");
     websocket = new WebSocket(gateway);
@@ -40,7 +27,6 @@ function onClose(event) {
 }
 
 function scrollLast() {
-    console.log("scrol");
     let objDiv = document.getElementById("conv");
     objDiv.scrollTop = objDiv.scrollHeight;
 }
@@ -70,22 +56,12 @@ function onMessage(event) {
                 ":" +
                 (new Date().getMinutes() < 10 ? "0" : "") +
                 new Date().getMinutes();
-        if (!rcv.img) {
-            document.getElementById("conv").innerHTML +=
-                "<div class='text' id='left'><div class='name'>" +
-                rcv.name +
-                "</div><div class='txt'>" +
-                rcv.msg +
-                "</div><div class='time'>" +
-                rcv.time +
-                "</div></div>";
-        } else {
+        else {
             document.getElementById(
                 "conv"
-            ).innerHTML += `<div class='text' id='left'>
+            ).innerHTML += `<div class='text left'>
                 <div class='name'>${rcv.name}</div>
                 <div class='txt'>${rcv.msg}</div>
-                <img src=${rcv.img} />
                 <div class='time'>${rcv.time}</div>
                 </div>`;
         }
@@ -129,37 +105,27 @@ function initButton() {
     });
 }
 
-function sndMsg() {
+async function sndMsg() {
     const info = {
+        name,
         msg: document.getElementById("in").value,
         time: "",
-        img: "",
     };
-    info.time =
-        new Date().getHours() +
-        ":" +
-        (new Date().getMinutes() < 10 ? "0" : "") +
-        new Date().getMinutes();
+    if (info.msg) {
+        info.time =
+            new Date().getHours() +
+            ":" +
+            (new Date().getMinutes() < 10 ? "0" : "") +
+            new Date().getMinutes();
 
-    document.getElementById("in").value = "";
-    if (document.getElementsByTagName("input")[0].value) {
-        info.img = base64String;
+        document.getElementById("in").value = "";
         document.getElementById(
             "conv"
-        ).innerHTML += `<div class='text' id='right'>
-                <div class='txt'>${info.msg}</div>
-                <img src=${base64String} />
-                <div class='time'>${info.time}</div>
-                </div>`;
-    } else if (info.msg) {
-        document.getElementById(
-            "conv"
-        ).innerHTML += `<div class='text' id='right'>
-            <div class='txt'>${info.msg}</div>
-            <div class='time'>${info.time}</div>
-            </div>`;
+        ).innerHTML += `<div class='text right'>
+        <div class='txt'>${info.msg}</div>
+        <div class='time'>${info.time}</div>
+        </div>`;
+        websocket.send(JSON.stringify(info));
     }
-    console.log(info);
-    websocket.send(JSON.stringify(info));
     setTimeout(scrollLast, 500);
 }

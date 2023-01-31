@@ -6,7 +6,7 @@
 #include <FS.h>
 
 // Replace with your network credentials
-const char* ssid = "Chat Server";
+const char* ssid = "hash test";
 const char* password = "idontknow";
 
 const int ledPin = BUILTIN_LED;
@@ -35,10 +35,10 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *da
   AwsFrameInfo *info = (AwsFrameInfo*)arg;
   if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
     data[len] = 0;
+    msg=(char*)data;
     deserializeJson(clnt, (char*)data);
-    serializeJson(clnt,Serial);
     id = String(client->id());
-    if (clnt["name"]) // Just after client connects to the server
+    if (!clnt["msg"] && clnt["name"]) // Just after client connects to the server
     {
       clntList[id]["stat"] = true;
       clntList[id]["name"] = String(clnt["name"]);
@@ -60,10 +60,10 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *da
       serializeJson(srvr, x);
       ws.text(client->id(), x);
     }
-    else if (clnt["msg"] && clnt["time"])
+    else
     {
       Serial.printf("%s  %s: %s\n", String(clnt["time"]), String(clntList[id]["name"]), String(clnt["msg"]));
-      notifyClients(id, clnt["time"], clnt["msg"],clnt["img"]);
+      ws.textAll(msg);
     }
   }
 }
@@ -71,13 +71,13 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *da
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
   switch (type) {
     case WS_EVT_CONNECT:
-      Serial.printf("Client ID:%u connected\n", client->id());
+      Serial.printf("Client ID: %u connected\n", client->id());
       count++;
       break;
     case WS_EVT_DISCONNECT:
       id = String(client->id());
       clntList[id]["stat"] = false;
-      Serial.printf("Client ID:%s, Name: %s disconnected\n", id, String(clntList[id]["name"]));
+      Serial.printf("Client ID: %s, Name: %s disconnected\n", id, String(clntList[id]["name"]));
       notifyClients(id);
       break;
     case WS_EVT_DATA:
@@ -101,20 +101,35 @@ IPAddress subnet(255, 255, 255, 0);
 void setup() {
   // Serial port for debugging purposes
   Serial.begin(115200);
+  delay(1000);
   SPIFFS.begin();
 
   pinMode(ledPin, OUTPUT);
   digitalWrite(ledPin, 0);
 
-  // Initialize Wi-Fi
-  Serial.println();
-  Serial.print("Configuring soft-AP ... ");
-  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "" : "");
-  Serial.print("Setting soft-AP: ");
-  Serial.println(WiFi.softAP(ssid, password, 1, false, 8) ? "Ready" : "Failed!");
-  Serial.print("IP address of soft-AP: ");
-  Serial.println(WiFi.softAPIP());
+  // Initialize Wi-Fi Access Point
+  //  Serial.println();
+  //  Serial.print("Configuring soft-AP: ");
+  //  Serial.println(WiFi.softAPConfig(local_IP, gateway, subnet) ? "Done" : "Failed!");
+  //  Serial.print("Setting soft-AP: ");
+  //  Serial.println(WiFi.softAP(ssid, password, 1, false, 8) ? "Ready" : "Failed!");
+  //  Serial.print("IP address of soft-AP: ");
+  //  Serial.println(WiFi.softAPIP());
 
+  // Initialize Wi-Fi Station
+  Serial.println();
+//  Serial.print("Configuring IP: ");
+//  Serial.println(WiFi.config(local_IP, gateway, subnet) ? "Done" : "Failed!");
+  Serial.printf("Connecting to %s ",ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnection Successful!");
+  Serial.print("IP address of server: ");
+  Serial.println(WiFi.localIP());
+  
   initWebSocket();
 
   // Route for root / web page
