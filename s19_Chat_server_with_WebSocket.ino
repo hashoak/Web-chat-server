@@ -21,11 +21,10 @@ DynamicJsonDocument clntList(1024);
 String x,msg, id;
 uint32_t count;
 
-void notifyClients(String id, String time = "", String message = "",String img="") {
+void notifyClients(String id, String time = "", String message = "") {
   srvr["name"] = clntList[id]["name"];
   srvr["time"] = time;
   srvr["msg"] = message;
-  srvr["img"] = img;
   x = "";
   serializeJson(srvr, x);
   ws.textAll(x);
@@ -48,11 +47,13 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *da
       for (int i = 1; i < count; i++)
       {
         x=String(i);
-        if (boolean(clntList[x]["stat"])) msg += String(clntList[x]["name"]);
-        if (boolean(clntList[x]["stat"]) && i < count - 1) msg += ", ";
+        if (boolean(clntList[x]["stat"]))
+          msg += String(clntList[x]["name"])+ ", ";
       }
       if (msg == "") msg = "No one";
+      Serial.println(msg);
       if(msg[msg.length()-1]==' ') msg[msg.length()-2]='\0';
+      Serial.println(msg);
       srvr["name"] = "";
       srvr["time"] = "";
       srvr["msg"] = msg;
@@ -141,6 +142,9 @@ void setup() {
   });
   server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send(SPIFFS, "/script.js", "text/javascript");
+  });
+  server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(SPIFFS, "/favicon.ico", "text/ico");
   });
 
   // Start server
